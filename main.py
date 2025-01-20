@@ -106,32 +106,25 @@ class TileFile:
     def set_terrain_height(self, tile_index: int, height_index: int, height: float):
         self.terrain_data[tile_index]["height"][height_index] = height
 
+    def write_header(self, new_data):
+        new_data += struct.pack("<I", self.MAGIC_KEY)
+        new_data += struct.pack("<I", self.header["version"])
+        new_data += struct.pack("<16s", self.header["uuid"])
+        new_data += struct.pack("Q", self.header["creator_id"])
+        new_data += struct.pack("<I", self.header["width"])
+        new_data += struct.pack("<I", self.header["height"])
+        new_data += struct.pack("<I", self.header["cell_header_offset"])
+        new_data += struct.pack("<I", self.header["cell_header_size"])
+        new_data += struct.pack("<I", self.header["some_val1"])
+        new_data += struct.pack("<I", self.header["some_val2"])
+        new_data += struct.pack("<I", self.header["type"])
+        return new_data
+
     def write_file(self, output_file_path):
-        new_data = bytearray(self.original_data)
-        offset = self.header#cell_header_offset
+        new_data = b""
+        new_data = self.write_header(new_data)
 
-        for cell_idx, cell_header in enumerate(self.cell_headers):
-            for mip_level in range(6):
-                mip_index = cell_header["mip_index"][mip_level]
-                mip_compressed_size = cell_header["mip_compressed_size"][mip_level]
 
-                if mip_index <= 0 or mip_compressed_size <= 0:
-                    continue
-
-                # Serialize and compress terrain data
-                height_data = self.terrain_data[cell_idx]["height"]
-                color_data = self.terrain_data[cell_idx]["color"]
-
-                decompressed_data = b"".join(
-                    struct.pack("<fI", height, color)
-                    for height, color in zip(height_data, color_data)
-                )
-                compressed_data = lz4.block.compress(decompressed_data)
-
-                # Update compressed size
-                cell_header["mip_compressed_size"] = list(cell_header["mip_compressed_size"])
-                cell_header["mip_compressed_size"][mip_level] = len(compressed_data)
-                new_data[mip_index:mip_index + len(compressed_data)] = compressed_data
 
         with open(output_file_path, "wb") as f:
             f.write(new_data)
