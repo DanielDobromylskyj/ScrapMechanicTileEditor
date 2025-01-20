@@ -30,34 +30,51 @@ This chunk of data is from the the **_Cell Header Offset_** gathered from the **
 
 Cell headers are stored contiguosly in the data. Each header is the same size (**_Cell Header Size_** from **_File Header_**)
 
-> **_NOTE:_** This section is rather unknown still
+> **_NOTE:_** This section is rather unknown still. All compression in lz4
 
-- int32[6]   - 6x MIP indexes (Hieght data I believe)
+- int32[6]   - 6x MIP indexes (Colour data I believe)
 - int32[6]   - 6x MIP Compressed Sizes (Size of the data after index)
-- int32[6]   - 6x MIP Size (Uncompressed Size of MIP, Uses lz4 compression)
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32      - Unkown Value
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- int32[4]   - Unkown Values
-- +24 int32  - Unkown Values
+- int32[6]   - 6x MIP Size (Uncompressed Size of MIP)
+- int32      - Clutter Index
+- int32      - Clutter Compressed Size
+- int32      - Clutter Size (Uncompressed)
+- int32[4]   - Asset List Count
+- int32[4]   - Asset List Index
+- int32[4]   - Asset List Compressed Size
+- int32[4]   - Asset List Size
+- int32      - Blueprint List Count
+- int32      - Blueprint List Index
+- int32      - Blueprint List CompressedSize
+- int32      - Blueprint List Size
+- int32      - Node Count (Unsure what a node is)
+- int32      - Node Index
+- int32      - Node Compressed Size
+- int32      - Node Size
+- int32      - Script Count
+- int32      - Script Index
+- int32      - Script Compressed Size
+- int32      - Script Size
+- int32      - Prefab Count
+- int32      - Prefab Index
+- int32      - Prefab Compressed Size
+- int32      - Prefab Size
+- int32      - Decal Count
+- int32      - Decal Index
+- int32      - Decal Compressed Size
+- int32      - Decal Size
+- int32[4]   - Harvestable List Count
+- int32[4]   - Harvestable List Index
+- int32[4]   - Harvestable List Compressed Size
+- int32[4]   - Harvestable List Size
+- int32[4]   - Kinematics List Count
+- int32[4]   - Kinematics List Index
+- int32[4]   - Kinematics List Compressed Size
+- int32[4]   - Kinematics List Size
+- int32[4]   - Unkown Data x4
+- int32[4]   - Voxel Terrain Count
+- int32[4]   - Voxel Terrain Index
+- int32[4]   - Voxel Terrain Compressed Size
+- int32[4]   - Voxel Terrain Size
 
 > **_NOTE:_** All the header values are little endian
 
