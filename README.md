@@ -71,10 +71,10 @@ Cell headers are stored contiguosly in the data. Each header is the same size (*
 - int32[4]   - Kinematics List Compressed Size
 - int32[4]   - Kinematics List Size
 - int32[4]   - Unkown Data x4
-- int32[4]   - Voxel Terrain Count
-- int32[4]   - Voxel Terrain Index
-- int32[4]   - Voxel Terrain Compressed Size
-- int32[4]   - Voxel Terrain Size
+- int32   - Voxel Terrain Count
+- int32   - Voxel Terrain Index
+- int32   - Voxel Terrain Compressed Size
+- int32   - Voxel Terrain Size
 
 > **_NOTE:_** All the header values are little endian
 
