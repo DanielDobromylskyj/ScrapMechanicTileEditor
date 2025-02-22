@@ -120,6 +120,8 @@ class TileFile:
         cell_format = "<6i 6i 6i i i i 4i 4i 4i 4i i i i i i i i i i i i i i i i i i i i i 4i 4i 4i 4i 4i 4i 4i 4i 4i i i i i"
         unpacked = struct.unpack(cell_format, cell_data)
 
+        print(unpacked[96])
+
         return {
             "mip": {  # 6x (no count)
                 "index": unpacked[0:6],
@@ -189,20 +191,12 @@ class TileFile:
                 "size": unpacked[85:89],
             },
 
-            "unknown_data": {  # this may be the wrong way of reading the data
+            "voxel_terrain": {
                 "count": unpacked[89],
                 "index": unpacked[90],
                 "compressed": unpacked[91],
                 "size": unpacked[92],
-            },
-
-            "voxel_terrain": {
-                "count": unpacked[93:97],
-                "index": unpacked[97:101],
-                "compressed": unpacked[101:105],
-                "size": unpacked[105:109],
             }
-
         }
 
     @staticmethod
@@ -263,6 +257,19 @@ class TileFile:
         new_data += struct.pack("<I", self.header["type"])
         return new_data
 
+    @staticmethod
+    def create_cell_header(header):
+        cell_data = []  # Ensure its writing in the correct order
+        for key in ("mip", "clutter", "assets", "blueprint", "node", "script", "prefab", "decal", "harvestable", "kinematics", "unknown_data", "voxel_terrain"):
+            for value in ("count", "index", "compressed", "size"):
+                if value in header[key]:
+                    cell_data.append(header[key][value])
+
+        cell_format = "<6i 6i 6i i i i 4i 4i 4i 4i i i i i i i i i i i i i i i i i i i i i 4i 4i 4i 4i 4i 4i 4i 4i 4i i i i i"
+        return struct.pack(cell_format, *cell_data)
+
+
+
     def write_file(self, output_file_path):
         new_data = self.write_header(b"")
 
@@ -295,14 +302,18 @@ class TileFile:
                             cell_header[data_type]["compressed"][sub_cell_index] = compressed_cell_data
                         else:
                             cell_header[data_type]["compressed"] = compressed_cell_data
-                            
 
                     sub_cells_processed += 1
+
+            header_data = self.create_cell_header(cell_header)
+
             print(f"\r{bcolors.GOOD}[INFO] Processing... ({sub_cells_processed}/{sub_cell_count}){bcolors.ENDC}", end="")
 
-        print(f"\n{bcolors.GOOD}[INFO] Writing to... {output_file_path}{bcolors.ENDC}")
+        print(f"\r{bcolors.GOOD}[INFO] Writing to... {output_file_path}{bcolors.ENDC}", end="")
         with open(output_file_path, "wb") as f:
             f.write(new_data)
+
+        print(f"\r{bcolors.GOOD}[INFO] Saved to '{output_file_path}'{bcolors.ENDC}")
 
 
 if __name__ == "__main__":
