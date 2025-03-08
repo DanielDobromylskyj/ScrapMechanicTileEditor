@@ -32,6 +32,8 @@ class SubCellData:
 
 class TileFile:
     MAGIC_KEY = 0x454C4954  # "TILE"
+    CELL_HEADER_SIZE = 97
+    CELL_DATA_SIZE = 388
 
     def __init__(self, file_path):
         self.file_path = file_path
@@ -115,12 +117,13 @@ class TileFile:
             self.cell_headers.append(cell_header)
             offset += cell_size
 
-    @staticmethod
-    def parse_cell_header(cell_data):
+    def parse_cell_header(self, cell_data):
         cell_format = "<6i 6i 6i i i i 4i 4i 4i 4i i i i i i i i i i i i i i i i i i i i i 4i 4i 4i 4i 4i 4i 4i 4i 4i i i i i"
         unpacked = struct.unpack(cell_format, cell_data)
 
-        print(unpacked[96])
+        if len(unpacked) != self.CELL_HEADER_SIZE:
+            print(len(unpacked))
+            raise ValueError("Invalid .tile file: Cell Header size mismatch")
 
         return {
             "mip": {  # 6x (no count)
@@ -191,11 +194,18 @@ class TileFile:
                 "size": unpacked[85:89],
             },
 
-            "voxel_terrain": {
+            "unknown": {
                 "count": unpacked[89],
                 "index": unpacked[90],
                 "compressed": unpacked[91],
                 "size": unpacked[92],
+            },
+
+            "voxel_terrain": {
+                "count": unpacked[93],
+                "index": unpacked[94],
+                "compressed": unpacked[95],
+                "size": unpacked[96],
             }
         }
 
@@ -259,11 +269,65 @@ class TileFile:
 
     @staticmethod
     def create_cell_header(header):
-        cell_data = []  # Ensure its writing in the correct order
-        for key in ("mip", "clutter", "assets", "blueprint", "node", "script", "prefab", "decal", "harvestable", "kinematics", "unknown_data", "voxel_terrain"):
-            for value in ("count", "index", "compressed", "size"):
-                if value in header[key]:
-                    cell_data.append(header[key][value])
+        cell_data = [
+            header["mip"]["index"][0], header["mip"]["index"][1], header["mip"]["index"][2], header["mip"]["index"][3], header["mip"]["index"][4], header["mip"]["index"][5],
+            header["mip"]["compressed"][0], header["mip"]["compressed"][1], header["mip"]["compressed"][2], header["mip"]["compressed"][3], header["mip"]["compressed"][4], header["mip"]["compressed"][5],
+            header["mip"]["size"][0], header["mip"]["size"][1], header["mip"]["size"][2], header["mip"]["size"][3], header["mip"]["size"][4], header["mip"]["size"][5],
+
+            header["clutter"]["index"],
+            header["clutter"]["compressed"],
+            header["clutter"]["size"],
+
+            header["assets"]["count"][0], header["assets"]["count"][1], header["assets"]["count"][2], header["assets"]["count"][3],
+            header["assets"]["index"][0], header["assets"]["index"][1], header["assets"]["index"][2], header["assets"]["index"][3],
+            header["assets"]["compressed"][0], header["assets"]["compressed"][1], header["assets"]["compressed"][2], header["assets"]["compressed"][3],
+            header["assets"]["size"][0], header["assets"]["size"][1], header["assets"]["size"][2], header["assets"]["size"][3],
+
+            header["blueprint"]["count"],
+            header["blueprint"]["index"],
+            header["blueprint"]["compressed"],
+            header["blueprint"]["size"],
+
+            header["node"]["count"],
+            header["node"]["index"],
+            header["node"]["compressed"],
+            header["node"]["size"],
+
+            header["script"]["count"],
+            header["script"]["index"],
+            header["script"]["compressed"],
+            header["script"]["size"],
+
+            header["prefab"]["count"],
+            header["prefab"]["index"],
+            header["prefab"]["compressed"],
+            header["prefab"]["size"],
+
+            header["decal"]["count"],
+            header["decal"]["index"],
+            header["decal"]["compressed"],
+            header["decal"]["size"],
+
+            header["harvestable"]["count"][0], header["harvestable"]["count"][1], header["harvestable"]["count"][2], header["harvestable"]["count"][3],
+            header["harvestable"]["index"][0], header["harvestable"]["index"][1], header["harvestable"]["index"][2], header["harvestable"]["index"][3],
+            header["harvestable"]["compressed"][0], header["harvestable"]["compressed"][1], header["harvestable"]["compressed"][2], header["harvestable"]["compressed"][3],
+            header["harvestable"]["size"][0], header["harvestable"]["size"][1], header["harvestable"]["size"][2], header["harvestable"]["size"][3],
+
+            header["kinematics"]["count"][0], header["kinematics"]["count"][1], header["kinematics"]["count"][2], header["kinematics"]["count"][3],
+            header["kinematics"]["index"][0], header["kinematics"]["index"][1], header["kinematics"]["index"][2], header["kinematics"]["index"][3],
+            header["kinematics"]["compressed"][0], header["kinematics"]["compressed"][1], header["kinematics"]["compressed"][2], header["kinematics"]["compressed"][3],
+            header["kinematics"]["size"][0], header["kinematics"]["size"][1], header["kinematics"]["size"][2], header["kinematics"]["size"][3],
+
+            header["unknown"]["count"],
+            header["unknown"]["index"],
+            header["unknown"]["compressed"],
+            header["unknown"]["size"],
+
+            header["voxel_terrain"]["count"],
+            header["voxel_terrain"]["index"],
+            header["voxel_terrain"]["compressed"],
+            header["voxel_terrain"]["size"]
+        ]
 
         cell_format = "<6i 6i 6i i i i 4i 4i 4i 4i i i i i i i i i i i i i i i i i i i i i 4i 4i 4i 4i 4i 4i 4i 4i 4i i i i i"
         return struct.pack(cell_format, *cell_data)
@@ -271,6 +335,7 @@ class TileFile:
 
 
     def write_file(self, output_file_path):
+        print(f"{bcolors.GOOD}[INFO] Creating Tile Header... {bcolors.ENDC}", end="")
         new_data = self.write_header(b"")
 
         if len(new_data) != self.header["cell_header_offset"]:
@@ -282,30 +347,59 @@ class TileFile:
                 for _ in self.world_data[i][j]:
                     sub_cell_count += 1
 
+        print(f"\r{bcolors.GOOD}[INFO] Blocking Space... {bcolors.ENDC}", end="")
+
+        # block out cell header space
+        new_data += (" " * self.CELL_DATA_SIZE * len(self.cell_headers)).encode()
+
         sub_cells_processed = 0
-        print(f"{bcolors.GOOD}[INFO] Processing... (0/{sub_cell_count}){bcolors.ENDC}", end="")
+        print(f"\r{bcolors.GOOD}[INFO] Processing... (0/{sub_cell_count}){bcolors.ENDC}", end="")
         for cell_index, cell_header in enumerate(self.cell_headers):
             for data_type in self.world_data[cell_index]:
                 for sub_cell_index, sub_cell in enumerate(self.world_data[cell_index][data_type]):
                     if type(sub_cell) is not tuple:
-                        multiple_sub_cells = type(cell_header[data_type]["index"]) is tuple
+                        multiple_sub_cells = type(cell_header[data_type]["index"]) is not int
 
                         encode_func = None
                         if data_type in self.read_write_functions:
                             encode_func = self.read_write_functions[data_type][1]
 
                         raw_sub_cell_data = sub_cell.encode(encode_func)
-                        compressed_cell_data = lz4.block.compress(raw_sub_cell_data)
+                        compressed_cell_data = lz4.block.compress(raw_sub_cell_data, mode="high_compression")
 
                         if multiple_sub_cells:
-                            cell_header[data_type]["compressed"] = list(cell_header[data_type]["compressed"])
-                            cell_header[data_type]["compressed"][sub_cell_index] = compressed_cell_data
+                            if type(cell_header[data_type]["index"]) is tuple:
+                                cell_header[data_type]["index"] = list(cell_header[data_type]["index"])
+
+                            cell_header[data_type]["index"][sub_cell_index] = len(new_data)
+
+                            if type(cell_header[data_type]["compressed"]) is tuple:
+                                cell_header[data_type]["compressed"] = list(cell_header[data_type]["compressed"])
+
+                            cell_header[data_type]["compressed"][sub_cell_index] = len(compressed_cell_data)
+
+                            if type(cell_header[data_type]["size"]) is tuple:
+                                cell_header[data_type]["size"] = list(cell_header[data_type]["size"])
+
+                            cell_header[data_type]["size"][sub_cell_index] = len(raw_sub_cell_data)
                         else:
-                            cell_header[data_type]["compressed"] = compressed_cell_data
+                            cell_header[data_type]["index"] = len(new_data)
+                            cell_header[data_type]["compressed"] = len(compressed_cell_data)
+                            cell_header[data_type]["size"] = len(raw_sub_cell_data)
+
+                        new_data += compressed_cell_data  # todo - data is "corrupted" between this function and reading next time
 
                     sub_cells_processed += 1
 
             header_data = self.create_cell_header(cell_header)
+
+            start = self.header["cell_header_offset"] + (self.CELL_DATA_SIZE * cell_index)
+            end = start + self.CELL_DATA_SIZE
+
+            if len(header_data) != end - start:
+                raise ValueError(f"Header Data Does not match the cell size {len(header_data)}/{end - start}")
+
+            new_data = new_data[:start] + header_data + new_data[end:]
 
             print(f"\r{bcolors.GOOD}[INFO] Processing... ({sub_cells_processed}/{sub_cell_count}){bcolors.ENDC}", end="")
 
@@ -325,5 +419,8 @@ if __name__ == "__main__":
     #tile_file.set_terrain_height(0, 2, 4)
 
     tile_file.write_file(r"test.tile")
-    #load_test = TileFile(r"test.tile")
-    #load_test.read_file()
+
+    print("Attempted to load saved file")
+
+    load_test = TileFile(r"test.tile")
+    load_test.read_file()
