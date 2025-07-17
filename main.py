@@ -1,5 +1,6 @@
 import struct
 import lz4.block
+import numpy as np
 
 from readwrite import voxel_terrain
 from readwrite import mip
@@ -8,6 +9,7 @@ from readwrite import mip
 class bcolors:
     HEADER = '\033[95m'
     GOOD = '\033[92m'
+    BLUE = '\033[94m'
     ERROR = '\033[91m'
     WARNING = '\033[93m'
     ENDC = '\033[0m'
@@ -42,13 +44,18 @@ class TileFile:
         self.world_data = []  # [cell_index][data_type][index]
         self.original_data = None  # Store the original file data for reconstruction
 
+        self.DEBUG = False
+
         self.read_write_functions = {
             "mip": (mip.read_mip, mip.write_mip),
         }
 
-    def read_file(self):
-        with open(self.file_path, "rb") as f:
-            self.original_data = f.read()
+    def read_file(self, raw_input_bytes: bytes | bytearray | None =None):
+        if not raw_input_bytes:
+            with open(self.file_path, "rb") as f:
+                self.original_data = f.read()
+        else:
+            self.original_data = raw_input_bytes
 
         self.parse_header(self.original_data)
         self.parse_cell_headers(self.original_data)
@@ -214,8 +221,16 @@ class TileFile:
         if index <= 0 or compressed <= 0:
             return index, size, compressed
 
-        compressed_data = data[index:index + compressed]
-        decompressed_data = lz4.block.decompress(compressed_data, uncompressed_size=size)
+        compressed_data = data[index:index + compressed]  # fixme - Bad index of compressed size
+
+        if index == 99388:
+            print(compressed_data)
+
+        try:
+            decompressed_data = lz4.block.decompress(compressed_data, uncompressed_size=size)
+        except:
+            print("Error decompressing data", index, size, compressed, header_name)
+            raise
 
         meta = {"index": index, "compressed": compressed, "size": size, "count": count}
         sub_cell = SubCellData(header_name, decompressed_data, meta)
@@ -256,7 +271,7 @@ class TileFile:
     def write_header(self, new_data):
         new_data += struct.pack("<I", self.MAGIC_KEY)
         new_data += struct.pack("<I", self.header["version"])
-        new_data += struct.pack("<16s", self.header["uuid"].encode())
+        new_data += struct.pack("<16s", bytes.fromhex(self.header["uuid"]))
         new_data += struct.pack("<Q", self.header["creator_id"])
         new_data += struct.pack("<I", self.header["width"])
         new_data += struct.pack("<I", self.header["height"])
@@ -332,9 +347,82 @@ class TileFile:
         cell_format = "<6i 6i 6i i i i 4i 4i 4i 4i i i i i i i i i i i i i i i i i i i i i 4i 4i 4i 4i 4i 4i 4i 4i 4i i i i i"
         return struct.pack(cell_format, *cell_data)
 
+    def __validate_write(self, new_data):
+        validate_failed = False
+        tile = None
+
+        def fake_print(*args, **kwargs):
+            return
+
+        default_print = print
+
+        try:
+            __builtins__.print = fake_print
+            tile = TileFile(None)
+            tile.DEBUG = True
+            tile.read_file(new_data)
+            __builtins__.print = default_print
+
+        except Exception as e:
+            validate_failed = True
+            __builtins__.print = default_print
+
+            print(f"\n{bcolors.ERROR}[ERROR] Failed to validate data when writing!{bcolors.ENDC}")
+            print(f"{bcolors.ERROR}[ERROR] Caught Exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.BLUE}[DEBUG] Attempting Debug...")
+
+            if tile:
+                print("[DEBUG] Checking Header values...")
+                for key, value in tile.header.items():
+                    if self.header[key] != value:
+                        print(f"{bcolors.WARNING}[WARN] Header Mismatch: {key}. Expected: {self.header[key]}, Got: {value}{bcolors.BLUE}")
+
+                print("[DEBUG] Checking Cell Index / Sizes For Mismatching...")
+
+                for cell_index, cell_header in enumerate(tile.cell_headers):
+                    true_header = self.cell_headers[cell_index]
+
+                    for key, chunk in cell_header.items():
+                        chunk_is_invalid = False
+
+                        for sub_key, value in chunk.items():
+                            if type(value) is int and type(true_header[key][sub_key]) is int:
+                                continue
+
+                            if tuple(value) != tuple(true_header[key][sub_key]):
+                                chunk_is_invalid = True
+
+                        if chunk_is_invalid:
+                            print(f"{bcolors.WARNING}[WARN] Cell Header Mismatch! -> Cell: {cell_index}, Field: {key}, Loaded: {chunk}{bcolors.BLUE}")
 
 
-    def write_file(self, output_file_path):
+                print("[DEBUG] Checking Cell Index / Sizes For Overflow...")
+
+                for cell_index, cell_header in enumerate(tile.cell_headers):
+                    for key, chunk in cell_header.items():
+                        if type(chunk["index"]) is int:
+                            index_pointers = [chunk["index"]]
+                            size_pointers = [chunk["compressed"]]
+                        else:
+                            index_pointers = chunk["index"]
+                            size_pointers = chunk["compressed"]
+
+                        for i in range(len(index_pointers)):
+                            last = index_pointers[i] + size_pointers[i] - 1  # Unsure if this -1 is good or not.
+                            # Stops a false warning I think
+
+                            if last >= len(new_data):
+                                print(f"{bcolors.WARNING}[WARN] Cell Header Overflow! -> Cell: {cell_index}, Field: {key}. DEBUG: {last}, {len(new_data)}. {bcolors.BLUE}")
+
+
+                print(f"{bcolors.ENDC}", end="")
+
+            else:
+                print("[DEBUG] Tile Init Failed")
+
+        return not validate_failed
+
+    def write_file(self, output_file_path) -> bool:
         print(f"{bcolors.GOOD}[INFO] Creating Tile Header... {bcolors.ENDC}", end="")
         new_data = self.write_header(b"")
 
@@ -350,7 +438,10 @@ class TileFile:
         print(f"\r{bcolors.GOOD}[INFO] Blocking Space... {bcolors.ENDC}", end="")
 
         # block out cell header space
-        new_data += (" " * self.CELL_DATA_SIZE * len(self.cell_headers)).encode()
+        new_data += ("X" * (self.CELL_DATA_SIZE * len(self.cell_headers))).encode()
+
+        data_blob_offset = len(new_data)
+        data_blob = b""
 
         sub_cells_processed = 0
         print(f"\r{bcolors.GOOD}[INFO] Processing... (0/{sub_cell_count}){bcolors.ENDC}", end="")
@@ -365,62 +456,71 @@ class TileFile:
                             encode_func = self.read_write_functions[data_type][1]
 
                         raw_sub_cell_data = sub_cell.encode(encode_func)
-                        compressed_cell_data = lz4.block.compress(raw_sub_cell_data, mode="high_compression")
+                        compressed_cell_data = lz4.block.compress(raw_sub_cell_data, mode="high_compression", store_size=False)
 
                         if multiple_sub_cells:
                             if type(cell_header[data_type]["index"]) is tuple:
                                 cell_header[data_type]["index"] = list(cell_header[data_type]["index"])
 
-                            cell_header[data_type]["index"][sub_cell_index] = len(new_data)
-
                             if type(cell_header[data_type]["compressed"]) is tuple:
                                 cell_header[data_type]["compressed"] = list(cell_header[data_type]["compressed"])
-
-                            cell_header[data_type]["compressed"][sub_cell_index] = len(compressed_cell_data)
 
                             if type(cell_header[data_type]["size"]) is tuple:
                                 cell_header[data_type]["size"] = list(cell_header[data_type]["size"])
 
+                            cell_header[data_type]["index"][sub_cell_index] = len(data_blob) + data_blob_offset
+                            cell_header[data_type]["compressed"][sub_cell_index] = len(compressed_cell_data)
                             cell_header[data_type]["size"][sub_cell_index] = len(raw_sub_cell_data)
+
                         else:
-                            cell_header[data_type]["index"] = len(new_data)
+                            cell_header[data_type]["index"] = len(data_blob) + data_blob_offset
                             cell_header[data_type]["compressed"] = len(compressed_cell_data)
                             cell_header[data_type]["size"] = len(raw_sub_cell_data)
 
-                        new_data += compressed_cell_data  # todo - data is "corrupted" between this function and reading next time
+                        #compressed_cell_data = b"START" + compressed_cell_data[5:-3] + b"END"
+                        data_blob += compressed_cell_data
 
                     sub_cells_processed += 1
 
             header_data = self.create_cell_header(cell_header)
 
+            if len(header_data) != self.CELL_DATA_SIZE:
+                raise ValueError(f"Header data is invalid size! ({len(header_data)}) / ({self.CELL_DATA_SIZE}) ")
+
+
             start = self.header["cell_header_offset"] + (self.CELL_DATA_SIZE * cell_index)
-            end = start + self.CELL_DATA_SIZE
+            end = (start + self.CELL_DATA_SIZE)
 
             if len(header_data) != end - start:
                 raise ValueError(f"Header Data Does not match the cell size {len(header_data)}/{end - start}")
+
+            if end > len(new_data):
+                raise ValueError(f"Invalid Header Index (Out of bounds). Index: {end}, Max: {len(new_data)}")
 
             new_data = new_data[:start] + header_data + new_data[end:]
 
             print(f"\r{bcolors.GOOD}[INFO] Processing... ({sub_cells_processed}/{sub_cell_count}){bcolors.ENDC}", end="")
 
-        print(f"\r{bcolors.GOOD}[INFO] Writing to... {output_file_path}{bcolors.ENDC}", end="")
-        with open(output_file_path, "wb") as f:
-            f.write(new_data)
 
-        print(f"\r{bcolors.GOOD}[INFO] Saved to '{output_file_path}'{bcolors.ENDC}")
+        new_data += data_blob
+        self.__validate_write(new_data)
+        if True:
+            print(f"\r{bcolors.GOOD}[INFO] Writing to... {output_file_path}{bcolors.ENDC}", end="")
+            with open(output_file_path, "wb") as f:
+                f.write(new_data)
+
+            print(f"\r{bcolors.GOOD}[INFO] Saved to '{output_file_path}'{bcolors.ENDC}")
+            return True
+        else:
+            print(f"\r{bcolors.WARNING}[WARN] Failed to write file. Validation Failed!{bcolors.ENDC}")
+            return False
 
 
 if __name__ == "__main__":
+    from viewer import render_full
     tile_file = TileFile(r"tile\Dirt Race Track Tile.tile")
     tile_file.read_file()
 
-    #tile_file.set_terrain_height(0, 0, 2)
-    #tile_file.set_terrain_height(0, 1, 3)
-    #tile_file.set_terrain_height(0, 2, 4)
+    render_full(tile_file.world_data, depth=0)  # High Rez  (528, 528)
 
-    tile_file.write_file(r"test.tile")
-
-    print("Attempted to load saved file")
-
-    load_test = TileFile(r"test.tile")
-    load_test.read_file()
+    tile_file.write_file(r"test.tile")  # This tile is 10Kb larger than we started with?
