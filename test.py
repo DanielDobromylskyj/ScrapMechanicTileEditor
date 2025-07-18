@@ -6,7 +6,7 @@ from ScrapTiles import TileFile
 from ScrapTiles.edit import mip
 
 def generate_perlin_noise(width, height, scale=50.0, octaves=4, persistence=0.5, lacunarity=2.0, base=0):
-    """Generates a 2D array of Perlin noise."""
+    """ Generates a 2D array of Perlin noise. """
     noise_map = np.zeros((height, width), dtype=np.float32)
 
     for y in range(height):
