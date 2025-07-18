@@ -5,6 +5,7 @@ from ScrapTiles import TileFile
 
 from ScrapTiles.edit import mip
 
+
 def generate_perlin_noise(width, height, scale=50.0, octaves=4, persistence=0.5, lacunarity=2.0, base=0):
     """ Generates a 2D array of Perlin noise. """
     noise_map = np.zeros((height, width), dtype=np.float32)
@@ -27,9 +28,13 @@ def generate_perlin_noise(width, height, scale=50.0, octaves=4, persistence=0.5,
 
 
 if __name__ == "__main__":
-    tile = TileFile("Empty.tile")
+    path = r"C:\Users\danie\AppData\Roaming\Axolot Games\Scrap Mechanic\User\User_76561198336691145\Tiles\0143e8f2-5902-4e2a-88ae-5a7de9a27405\CustomTile.tile"
+
+    tile = TileFile(path)
 
     with mip.Modifier(tile) as mi:
+        mi.clear_ground_map(mip.Materials.Test, 15)
+
         width, height = mi.get_size()
 
         noise = generate_perlin_noise(width, height, scale=80.0)
@@ -41,7 +46,9 @@ if __name__ == "__main__":
         for y in range(height):
             for x in range(width):
                 mi.set_height(x, y, terrain[y, x])
+                #mi.set_colour(x, y, ((x//2), (y//2), 0, 255))
 
 
-    tile.write_file(r"perlin_noise.tile")
+
+    tile.write_file(path)
 

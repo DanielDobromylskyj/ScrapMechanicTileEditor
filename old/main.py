@@ -518,12 +518,14 @@ class TileFile:
 if __name__ == "__main__":
     from readwrite.mip import Modifier as MipModifier
 
-    tile_file = TileFile(r"tile\Empty.tile")
+    tile_file = TileFile(r"tile\Dirt Race Track Tile.tile")
     tile_file.read_file()
 
+    from viewer import render_full
 
-    with MipModifier(tile_file) as mip:
-        mip.set_height(10, 10, 80)
-
-
-    tile_file.write_file(r"test.tile")
+    render_full(tile_file.world_data, 0)
+    render_full(tile_file.world_data, 1)
+    render_full(tile_file.world_data, 2)
+    render_full(tile_file.world_data, 3)
+    render_full(tile_file.world_data, 4)
+    render_full(tile_file.world_data, 5)

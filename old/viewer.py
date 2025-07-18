@@ -32,7 +32,7 @@ def render_full(world_data, depth=0):  # depth = 0 is highest resolution
         x = idx % grid_dim
         y = idx // grid_dim
 
-        tile = chunk["mip"][depth].data["height_map"]
+        tile = chunk["mip"][depth].data["ground_map"]  # height_map
         tile_array = np.array(tile, dtype=np.float32).reshape((tile_size, tile_size))
 
         # Compute insertion location
