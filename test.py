@@ -34,7 +34,6 @@ if __name__ == "__main__":
 
         noise = generate_perlin_noise(width, height, scale=80.0)
 
-        # Normalize to your desired height range
         min_h = -5
         max_h = 40
         terrain = ((noise + 1) / 2) * (max_h - min_h) + min_h
