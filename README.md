@@ -1,4 +1,5 @@
 # File format (.tile)
+> **_NOTE:_** A large amount of infomation about the .tile format has been collected from [QuestionableM's SM-Converter](https://github.com/QuestionableM/SM-Converter/)
 
 # Binary Layout
 
