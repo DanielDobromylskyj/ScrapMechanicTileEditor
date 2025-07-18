@@ -1,5 +1,7 @@
 import struct
-
+import numpy as np
+import math
+from scipy.ndimage import zoom
 
 def infer_dimensions(size):
     # Total size = (vertex_count * 8) + (ground_count * 8)

@@ -3,7 +3,7 @@ import lz4.block
 import numpy as np
 
 from readwrite import voxel_terrain
-from readwrite import mip
+from readwrite import mip as readwrite_mip
 
 
 class bcolors:
@@ -47,7 +47,7 @@ class TileFile:
         self.DEBUG = False
 
         self.read_write_functions = {
-            "mip": (mip.read_mip, mip.write_mip),
+            "mip": (readwrite_mip.read_mip, readwrite_mip.write_mip),
         }
 
     def read_file(self, raw_input_bytes: bytes | bytearray | None =None):
@@ -221,7 +221,7 @@ class TileFile:
         if index <= 0 or compressed <= 0:
             return index, size, compressed
 
-        compressed_data = data[index:index + compressed]  # fixme - Bad index of compressed size
+        compressed_data = data[index:index + compressed]
 
         if index == 99388:
             print(compressed_data)
@@ -422,7 +422,7 @@ class TileFile:
 
         return not validate_failed
 
-    def write_file(self, output_file_path) -> bool:
+    def write_file(self, output_file_path, validate=False) -> bool:
         print(f"{bcolors.GOOD}[INFO] Creating Tile Header... {bcolors.ENDC}", end="")
         new_data = self.write_header(b"")
 
@@ -477,7 +477,6 @@ class TileFile:
                             cell_header[data_type]["compressed"] = len(compressed_cell_data)
                             cell_header[data_type]["size"] = len(raw_sub_cell_data)
 
-                        #compressed_cell_data = b"START" + compressed_cell_data[5:-3] + b"END"
                         data_blob += compressed_cell_data
 
                     sub_cells_processed += 1
@@ -503,8 +502,8 @@ class TileFile:
 
 
         new_data += data_blob
-        self.__validate_write(new_data)
-        if True:
+
+        if validate is False or self.__validate_write(new_data):
             print(f"\r{bcolors.GOOD}[INFO] Writing to... {output_file_path}{bcolors.ENDC}", end="")
             with open(output_file_path, "wb") as f:
                 f.write(new_data)
@@ -517,10 +516,14 @@ class TileFile:
 
 
 if __name__ == "__main__":
-    from viewer import render_full
-    tile_file = TileFile(r"tile\Dirt Race Track Tile.tile")
+    from readwrite.mip import Modifier as MipModifier
+
+    tile_file = TileFile(r"tile\Empty.tile")
     tile_file.read_file()
 
-    render_full(tile_file.world_data, depth=0)  # High Rez  (528, 528)
 
-    tile_file.write_file(r"test.tile")  # This tile is 10Kb larger than we started with?
+    with MipModifier(tile_file) as mip:
+        mip.set_height(10, 10, 80)
+
+
+    tile_file.write_file(r"test.tile")
