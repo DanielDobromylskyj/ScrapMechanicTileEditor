@@ -28,10 +28,63 @@ class MemoryWrapper:
         return self.data[offset:offset+length].decode('utf-8')
 
 
+
+def debug(decompressed_data, metadata):
+    memory = MemoryWrapper(decompressed_data)
+    index = 0
+
+    print(">>> Debug -> Count:", metadata["count"])
+
+    for i in range(metadata["count"]):
+        print("\n\n>> Object Index:", i)
+
+        position = memory.read_vec3(index)
+        print("> Position:", position)
+
+        rotation = memory.read_quat(index + 0xC)
+        print("> Rotation:", rotation)
+
+        scale = memory.read_vec3(index + 0x1C)
+        index += 0x28
+        print("> Scale:", scale)
+
+        f_uuid = memory.read_uuid(index)
+        index += 0x10
+        print("> UUID:", f_uuid.hex())
+
+        bVar4 = memory.read_uint8(index)
+        index += 1
+
+        print("> Sub Count:", bVar4, "\n")
+
+        for _ in range(bVar4):
+            key_len = memory.read_uint8(index)
+            index += 1
+
+            print("> Key Length:", key_len)
+
+            key = memory.read_string(index, key_len)
+            index += key_len
+
+            print("> Key:", key)
+
+            color = memory.read_uint32(index)
+            index += 4
+
+            print("> Colour:", color)
+
+        index += 1
+
+
+
+
+
 def read_assetList(decompressed_data, metadata, version=13):
     objects = []
     memory = MemoryWrapper(decompressed_data)
     index = 0
+
+    #debug(decompressed_data, metadata)
 
     for _ in range(metadata["count"]):
         position = memory.read_vec3(index)
@@ -59,6 +112,7 @@ def read_assetList(decompressed_data, metadata, version=13):
         if bVar4 != 0:
             for _ in range(bVar4):
                 key_len = memory.read_uint8(index)
+
                 index += 1
                 key = memory.read_string(index, key_len)
                 index += key_len
@@ -68,7 +122,7 @@ def read_assetList(decompressed_data, metadata, version=13):
                 if key not in colour_map:
                     colour_map[key] = color
 
-        if version >= 12:
+        if version >= 12:  # Unknown value
             index += 1  # Skip 1 byte for newest version of .tile
 
         objects.append({
@@ -78,6 +132,8 @@ def read_assetList(decompressed_data, metadata, version=13):
             "UUID": f_uuid.hex(),
             "colourMap": colour_map,
         })
+
+
 
     return objects
 
@@ -118,7 +174,7 @@ def write_assetList(data, metadata, version=13):
             output += key_bytes
             output += struct.pack('<I', color)
 
-        if version >= 12:
-            output += b'\x00'  # One byte padding for version >= 12
+    if version >= 12:
+        output += b'\x00'  # One byte padding for version >= 12
 
     return bytes(output)

@@ -88,12 +88,12 @@ class Modifier:
 
     def create_object(self, xyz, rotation, scale, colour_map):
         self.objects.append({
-                "position": xyz,
-                "rotation": rotation,
-                "scale": scale,
-                "UUID": uuid.uuid4().hex,
-                "colour_map": colour_map,
-            })
+            "position": xyz,
+            "rotation": rotation,
+            "scale": scale,
+            "UUID": uuid.uuid4().hex,
+            "colour_map": colour_map,
+        })
 
     def update(self):
         self.__clone_array_to_tile_objects(self.objects)
