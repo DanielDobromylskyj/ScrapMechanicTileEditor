@@ -4,6 +4,7 @@ import lz4.block
 from .sub_tile import SubCellData
 
 from .readwrite import mip
+from .readwrite import assetList
 
 
 class bcolors:
@@ -29,6 +30,7 @@ class TileFile:
 
         self.read_write_functions = {
             "mip": (mip.read_mip, mip.write_mip),
+            "assets": (assetList.read_assetList, assetList.write_assetList),
         }
 
         if self.file_path:
@@ -200,15 +202,11 @@ class TileFile:
             }
         }
 
-    @staticmethod
-    def _decode_cell_chunk(data, index, size, compressed, count, header_name, parse_function):
+    def _decode_cell_chunk(self, data, index, size, compressed, count, header_name, parse_function):
         if index <= 0 or compressed <= 0:
             return index, size, compressed
 
         compressed_data = data[index:index + compressed]
-
-        if index == 99388:
-            print(compressed_data)
 
         try:
             decompressed_data = lz4.block.decompress(compressed_data, uncompressed_size=size)
@@ -217,7 +215,7 @@ class TileFile:
             raise
 
         meta = {"index": index, "compressed": compressed, "size": size, "count": count}
-        sub_cell = SubCellData(header_name, decompressed_data, meta)
+        sub_cell = SubCellData(header_name, decompressed_data, meta, self.header["version"])
 
         if parse_function is not None:
             sub_cell.decode(parse_function)

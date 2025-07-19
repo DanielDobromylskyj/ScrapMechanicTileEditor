@@ -29,11 +29,12 @@ def generate_perlin_noise(width, height, scale=50.0, octaves=4, persistence=0.5,
 
 if __name__ == "__main__":
     path = r"C:\Users\danie\AppData\Roaming\Axolot Games\Scrap Mechanic\User\User_76561198336691145\Tiles\0143e8f2-5902-4e2a-88ae-5a7de9a27405\CustomTile.tile"
+    path = "DemoTile.tile"
 
     tile = TileFile(path)
 
     with mip.Modifier(tile) as mi:
-        mi.clear_ground_map(mip.Materials.Test, 15)
+        mi.clear_ground_map(mip.Materials.Sand, 15)
 
         width, height = mi.get_size()
 

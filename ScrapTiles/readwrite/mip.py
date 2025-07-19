@@ -1,7 +1,4 @@
 import struct
-import numpy as np
-import math
-from scipy.ndimage import zoom
 
 def infer_dimensions(size):
     # Total size = (vertex_count * 8) + (ground_count * 8)
@@ -23,7 +20,7 @@ def infer_dimensions(size):
 
     raise ValueError("Could not infer dimensions")
 
-def read_mip(decompressed_data, metadata):
+def read_mip(decompressed_data, metadata, version=13):
     height_map = []
     color_map = []
     ground_map = []

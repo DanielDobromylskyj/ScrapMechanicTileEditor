@@ -37,6 +37,9 @@ class Modifier:
     def get_size(self):
         return self.pixel_shapes[0]
 
+    def get_ground_size(self):
+        return self.ground_shapes[0]
+
     def __calculate_true_pixel_shape(self) -> list[tuple[int, int]]:
         return [
             (
@@ -217,7 +220,8 @@ class Modifier:
     def get_raw(self) -> dict[str: np.ndarray]:
         return {
             "height_map": self.pixels,
-            "color_map": self.colours,
+            "colour_map": self.colours,
+            "ground_map": self.ground_map,
         }
 
     def __enter__(self):
