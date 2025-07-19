@@ -1,5 +1,7 @@
 # Scrap Mechanic Tile Editor!
 
+> **Disclaimer:** This project is still in development and may break or behave unexpectedly. Use at your own risk!
+
 This project aims to create a python module to edit/create and maybe view a scrap mechanic .tile file.
 I am a LONG way of completing this, Yet as of 18/07/25 basic terrain functions work including materials, colours and heights!
 I plan to add much more to this, and more documention on how to use it, and on the .tile format in general
