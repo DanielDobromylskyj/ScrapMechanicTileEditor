@@ -115,7 +115,6 @@ class TileFile:
         unpacked = struct.unpack(cell_format, cell_data)
 
         if len(unpacked) != self.CELL_HEADER_SIZE:
-            print(len(unpacked))
             raise ValueError("Invalid .tile file: Cell Header size mismatch")
 
         return {
@@ -361,10 +360,6 @@ class TileFile:
                         encode_func = None
                         if data_type in self.read_write_functions:
                             encode_func = self.read_write_functions[data_type][1]
-
-                        if data_type == "assets":
-                            sub_cell.original_data = sub_cell.encode(encode_func)
-                            sub_cell.decode(self.read_write_functions[data_type][0])
 
                         raw_sub_cell_data = sub_cell.encode(encode_func)
                         compressed_cell_data = lz4.block.compress(raw_sub_cell_data, mode="high_compression", store_size=False)

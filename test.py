@@ -52,9 +52,8 @@ if __name__ == "__main__":
 
 
     with assets.Modifier(tile) as asset:  # todo - Make this nicer to use
-        print(asset.objects)
         asset.create_object((5, 5, 20), (0, 0, 0, 0), (1, 5, 1), {'rock': 4285101422})
-        print(asset.objects)
+        #print(asset.objects)
 
 
     tile.write_file(output_path)

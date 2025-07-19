@@ -1,7 +1,6 @@
 import uuid
 
 from ..sub_tile import SubCellData
-from ..readwrite.assetList import read_assetList, write_assetList
 
 
 class Modifier:
@@ -18,24 +17,26 @@ class Modifier:
         self.objects = self.__clone_tile_objects_to_array()
 
     def __clone_tile_objects_to_array(self):
-        return [
-            {
-                "position": (
-                    cell_x * self.cell_size + object_data["position"][0],
-                    cell_y * self.cell_size + object_data["position"][1],
-                    object_data["position"][2]
-                ),
-                "rotation": object_data["rotation"],
-                "scale": object_data["scale"],
-                "UUID": object_data["UUID"],
-                "colour_map": object_data["colourMap"],
-            }
-            for cell_x in range(self.tile_shape[0])
-            for cell_y in range(self.tile_shape[1])
-            for region, chunk in enumerate(self.tile.world_data[cell_y * self.tile_shape[0] + cell_x]["assets"])
-            if type(chunk) is not tuple
-            for object_data in chunk.data
-        ]
+        objects = []
+        for cell_x in range(self.tile_shape[0]):
+            for cell_y in range(self.tile_shape[1]):
+                cell_index = cell_y * self.tile_shape[0] + cell_x
+                for region, chunk in enumerate(self.tile.world_data[cell_index]["assets"]):
+                    if type(chunk) is not tuple:
+                        for object_data in chunk.data:
+                            objects.append({
+                                "position": (
+                                    cell_x * self.cell_size + object_data["position"][0],
+                                    cell_y * self.cell_size + object_data["position"][1],
+                                    object_data["position"][2]
+                                ),
+                                "rotation": object_data["rotation"],
+                                "scale": object_data["scale"],
+                                "UUID": object_data["UUID"],
+                                "colour_map": object_data["colourMap"],
+                            })
+
+        return objects
 
     def get_objects_in_region(self, x1, y1, x2, y2):
         return [
@@ -61,8 +62,8 @@ class Modifier:
     def __clone_array_to_tile_objects(self, object_array):
         for cell_x in range(self.tile_shape[0]):
             for cell_y in range(self.tile_shape[1]):
-                new_raw = [(0, 0, 0) for _ in range(6)]
-                #for region in range(6):  # 6 chunks
+                new_raw = [(0, 0, 0) for _ in range(4)]
+                #for region in range(4):  # 6 chunks
 
                 region = 1
 
@@ -77,6 +78,7 @@ class Modifier:
                     ]
 
                     meta_data = {"index": 0, "compressed": 0, "size": 0, "count": len(true_objects)}
+
                     cell = SubCellData("assets", b"", meta_data, self.tile.header["version"])
                     cell.data = true_objects
                     new_raw[region] = cell
@@ -101,7 +103,7 @@ class Modifier:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:  # Exception raised, Do not save changes as it may now contain bad data.
-            print("[WARNING] An error occurred when modifying MIP data, No changes have been made.")
+            print("[WARNING] An error occurred when modifying Asset data, No changes have been made.")
             return False  # Let it propagate
         else:
             self.update()
