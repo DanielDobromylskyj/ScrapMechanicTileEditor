@@ -5,10 +5,15 @@ I am a LONG way of completing this, Yet as of 18/07/25 basic terrain functions w
 I plan to add much more to this, and more documention on how to use it, and on the .tile format in general
 If you have infomation on how the .tile format works not currently in this module please say!
 
-# File format (.tile)
+## Contents
+- [File Format](#file-format)
+- [Module Usage](#usage)
+
+
+# File format
 > **_NOTE:_** A large amount of infomation about the .tile format has been collected from [QuestionableM's SM-Converter](https://github.com/QuestionableM/SM-Converter/)
 
-# Binary Layout
+## Binary Layout
 
 ## Usefull Info:
 - '<' means little endian
@@ -87,3 +92,8 @@ Cell headers are stored contiguosly in the data. Each header is the same size (*
 > **_NOTE:_** All the header values are little endian
 
 More Docs todo, Check **_main.py_** For info not added to the README yet.
+
+
+## Usage
+
+
