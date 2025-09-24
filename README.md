@@ -198,7 +198,7 @@ with assets.Modifier(tile) as asset:
 
 ```
 
-> **_NOTE:_** A lot of this is unknown as of creation
+> **_NOTE:_** A lot of this is unknown as of creation. Has some context manager requirements as Mip
 
 
 
