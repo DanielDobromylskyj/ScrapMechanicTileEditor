@@ -115,7 +115,6 @@ class TileFile:
         unpacked = struct.unpack(cell_format, cell_data)
 
         if len(unpacked) != self.CELL_HEADER_SIZE:
-            print(len(unpacked))
             raise ValueError("Invalid .tile file: Cell Header size mismatch")
 
         return {
@@ -209,6 +208,7 @@ class TileFile:
         compressed_data = data[index:index + compressed]
 
         try:
+
             decompressed_data = lz4.block.decompress(compressed_data, uncompressed_size=size)
         except:
             print("Error decompressing data", index, size, compressed, header_name)
@@ -375,6 +375,13 @@ class TileFile:
                             if type(cell_header[data_type]["size"]) is tuple:
                                 cell_header[data_type]["size"] = list(cell_header[data_type]["size"])
 
+                            if "count" in cell_header[data_type]:
+                                if type(cell_header[data_type]["count"]):
+                                    cell_header[data_type]["count"] = list(cell_header[data_type]["count"])
+
+                                cell_header[data_type]["count"][sub_cell_index] = sub_cell.meta_data["count"]
+
+
                             cell_header[data_type]["index"][sub_cell_index] = len(data_blob) + data_blob_offset
                             cell_header[data_type]["compressed"][sub_cell_index] = len(compressed_cell_data)
                             cell_header[data_type]["size"][sub_cell_index] = len(raw_sub_cell_data)
@@ -383,6 +390,9 @@ class TileFile:
                             cell_header[data_type]["index"] = len(data_blob) + data_blob_offset
                             cell_header[data_type]["compressed"] = len(compressed_cell_data)
                             cell_header[data_type]["size"] = len(raw_sub_cell_data)
+
+                            if "count" in cell_header[data_type]:
+                                cell_header[data_type]["count"] = sub_cell.meta_data["count"]
 
                         data_blob += compressed_cell_data
 

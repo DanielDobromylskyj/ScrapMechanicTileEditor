@@ -126,7 +126,7 @@ tile.write_file(r"path/to/new.tile")
 #### Mip (Terrain -> Height/Colour/Material)
 
 ```python
-from ScrapTiles.edit import mip, 
+from ScrapTiles.edit import mip
 
 with mip.Modifier(tile) as mi:
   # Retrieve the size of the largest Height/Colour map image
@@ -168,6 +168,37 @@ with mip.Modifier(tile) as mi:
 
 > **_NOTE:_** If not using the context manager, ensure mi.update() is called before writing the file and after its modified. And do NOT write the file when still in a Modifiers context!
 > This is required due to how data is managed internally. And how it is converted / downscaled back to its original format used to write to the file.
+
+#### Assets
+
+```python
+from ScrapTiles.edit import mip
+
+asset_ids = assets.Assets
+
+with assets.Modifier(tile) as asset:
+    asset.create_object(
+        asset_uuid, 
+        (x, y, z), 
+        rotation, # (a, b, c, d)
+        (scale_x, scale_y, scale_z),
+        region,  # As of writing this, Im not sure what this is for, but setting it to 2 works...
+        colour_map  # A map of what parts of the asset should be what colour
+    )
+
+    # Example Object
+    asset.create_object(
+        asset_ids.env_nature_rocks_large01, 
+        (30, 30, 2), 
+        (0.7067, 0.0237, 0.0237, 0.7067),
+        (0.25, 0.25, 0.25),
+        2,
+        {'rock': 4285101422}
+    )
+
+```
+
+> **_NOTE:_** A lot of this is unknown as of creation. Has some context manager requirements as Mip
 
 
 
