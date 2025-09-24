@@ -51,9 +51,14 @@ if __name__ == "__main__":
     asset_ids = assets.Assets
 
     with assets.Modifier(tile) as asset:
-
-        asset.create_object(asset_ids.env_nature_rocks_large01, (30, 30, terrain[30, 30]), (0.7067, 0.0237, 0.0237, 0.7067),
-                            (0.25, 0.25, 0.25), 2,{'rock': 4285101422})
+        asset.create_object(
+            asset_ids.env_nature_rocks_large01,
+            (30, 30, terrain[30, 30]),
+            (0.7067, 0.0237, 0.0237, 0.7067),
+            (0.25, 0.25, 0.25),
+            2,
+            {'rock': 4285101422}
+        )
 
 
 
