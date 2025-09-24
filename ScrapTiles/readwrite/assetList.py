@@ -122,8 +122,10 @@ def read_assetList(decompressed_data, metadata, version=13):
                 if key not in colour_map:
                     colour_map[key] = color
 
+        unknown_value = None
         if version >= 12:  # Unknown value
-            index += 1  # Skip 1 byte for newest version of .tile
+            unknown_value = decompressed_data[index]
+            index += 1  # Skip 1 byte for the newest version of .tile
 
         objects.append({
             "position": position,
@@ -131,9 +133,8 @@ def read_assetList(decompressed_data, metadata, version=13):
             "scale": scale,
             "UUID": f_uuid.hex(),
             "colourMap": colour_map,
+            "unknown_value": unknown_value,
         })
-
-
 
     return objects
 
@@ -172,9 +173,10 @@ def write_assetList(data, metadata, version=13):
 
             output += struct.pack('<B', key_len)
             output += key_bytes
+
             output += struct.pack('<I', color)
 
-    if version >= 12:
-        output += b'\x00'  # One byte padding for version >= 12
+        if version >= 12:
+            output += (0).to_bytes(1)  # One byte padding for version >= 12
 
     return bytes(output)

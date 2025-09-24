@@ -2,9 +2,7 @@ import numpy as np
 from noise import pnoise2
 
 from ScrapTiles import TileFile
-
 from ScrapTiles.edit import mip, assets
-
 
 
 def generate_perlin_noise(width, height, scale=50.0, octaves=4, persistence=0.5, lacunarity=2.0, base=0):
@@ -29,31 +27,34 @@ def generate_perlin_noise(width, height, scale=50.0, octaves=4, persistence=0.5,
 
 
 if __name__ == "__main__":
-    output_path = r"C:\Users\danie\AppData\Roaming\Axolot Games\Scrap Mechanic\User\User_76561198336691145\Tiles\0143e8f2-5902-4e2a-88ae-5a7de9a27405\CustomTile.tile"
-    path = "DemoTile.tile"  # "Empty.tile"
+    output_path = r"C:\Users\danie\AppData\Roaming\Axolot Games\Scrap Mechanic\User\User_76561198336691145\Tiles\71ac6dea-2613-4996-aff0-f4c4d187ddd0\CustomTile.tile"
+    path = output_path#"debug_tiles/DEBUG_TILE_0.4.tile"  # "Empty.tile"
 
     tile = TileFile(path)
 
-    #with mip.Modifier(tile) as mi:
-    #    mi.clear_ground_map(mip.Materials.DefaultGrass, 15)
+    with mip.Modifier(tile) as mi:
+        mi.clear_ground_map(mip.Materials.DefaultGrass, 15)
 
-    #    width, height = mi.get_size()
+        width, height = mi.get_size()
 
-    #    noise = generate_perlin_noise(width, height, scale=80.0)
+        noise = generate_perlin_noise(width, height, scale=80.0)
 
-    #    min_h = -5
-    #    max_h = 40
-    #    terrain = ((noise + 1) / 2) * (max_h - min_h) + min_h
+        min_h = -5
+        max_h = 40
+        terrain = ((noise + 1) / 2) * (max_h - min_h) + min_h
 
-    #    for y in range(height):  # ~512
-    #        for x in range(width):  # ~512
-    #            mi.set_height(x, y, terrain[y, x])
-                #mi.set_colour(x, y, ((x//2), (y//2), 0, 255))
+        for y in range(height):  # ~512
+            for x in range(width):  # ~512
+                mi.set_height(x, y, terrain[y, x])
+                mi.set_colour(x, y, (0, 255, 0, 0))
 
+    asset_ids = assets.Assets
 
-    with assets.Modifier(tile) as asset:  # todo - Make this nicer to use
-        #asset.create_object((5, 5, 20), (0, 0, 0, 0), (1, 5, 1), {'rock': 4285101422})
-        pass
+    with assets.Modifier(tile) as asset:
+
+        asset.create_object(asset_ids.env_nature_rocks_large01, (30, 30, terrain[30, 30]), (0.7067, 0.0237, 0.0237, 0.7067),
+                            (0.25, 0.25, 0.25), 2,{'rock': 4285101422})
+
 
 
     tile.write_file(output_path)
