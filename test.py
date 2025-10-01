@@ -28,7 +28,7 @@ def generate_perlin_noise(width, height, scale=50.0, octaves=4, persistence=0.5,
 
 if __name__ == "__main__":
     output_path = r"C:\Users\danie\AppData\Roaming\Axolot Games\Scrap Mechanic\User\User_76561198336691145\Tiles\71ac6dea-2613-4996-aff0-f4c4d187ddd0\CustomTile.tile"
-    path = output_path#"debug_tiles/DEBUG_TILE_0.4.tile"  # "Empty.tile"
+    path = "debug_tiles/DEBUG_TILE_0.5.tile"  # "Empty.tile"
 
     tile = TileFile(path)
 
@@ -51,6 +51,8 @@ if __name__ == "__main__":
     asset_ids = assets.Assets
 
     with assets.Modifier(tile) as asset:
+        print(asset.get_objects())
+
         asset.create_object(
             asset_ids.env_nature_rocks_large01,
             (30, 30, terrain[30, 30]),
